@@ -86,3 +86,8 @@ def norm_plot(input_data,var_name):
     fig = plt.figure()
     res = stats.probplot((input_data)[var_name], plot=plt)
     plt.show()
+
+#Fill in empty values
+def fill_empty(input_data, var_name):
+    return input_data.fillna(var_name)
+

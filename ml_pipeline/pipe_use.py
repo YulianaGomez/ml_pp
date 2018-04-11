@@ -36,10 +36,13 @@ scale(read_d,'age')
 
 #Bivariate
 bivariate(read_d,'age', 'DebtRatio')
-"""
+
 
 #histogram and normal probability plot
 norm_plot(read_d,'age')
+"""
+#filling in empty data
+print (fill_empty(read_d,read_d.mean()))
 
 
 
