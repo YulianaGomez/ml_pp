@@ -9,42 +9,69 @@ from scipy import stats
 import warnings
 warnings.filterwarnings('ignore')
 
+"""
+    Homework 2: ML Pipeline
+    Looking at data regarding credit distress and trying to predict who will
+    have credit distress in the next two years. Below is testing the functions
+    created in pipe_tools script
+    
+    author: Yuliana Zamora
+    Date: April 17, 2018
+"""
 
-read_d = load_data("credit-data.csv")
-#print (read_d)
+
+data_frame = load_data("credit-data.csv")
+#print (data_frame)
 
 new_string = camel_case("helloPerson")
-#print (new_string)
-"""
-#print (read_d['age'].describe())
-print (summary(read_d['age']))
+print (new_string)
 
-cor_heat(read_d, 'age')
+#print (data_frame["SeriousDlqin2yrs"].describe())
+print (summary(data_frame["DebtRatio"]))
 
-histogram(read_d['age'])
+cor_heat(data_frame, "SeriousDlqin2yrs")
+
+categories = ["SeriousDlqin2yrs","NumberOfOpenCreditLinesAndLoans","NumberRealEstateLoansOrLines","age"]
+plotCorr(data_frame,categories)
+
+histogram(data_frame["age"])
 
 #missing data
-missing_data = miss_data(read_d)
+missing_data = miss_data(data_frame)
+print (missing_data)
 
 #dealing with missing data
-read_d = clean_miss(read_d )
-print (miss_data(read_d))
+data_frame = clean_miss(data_frame )
+print (miss_data(data_frame))
+
+#Discretize data
+print(descretize(data_frame, "MonthlyIncome", 4))
+
+#Creating dummy variable
+print(dummy_var(data_frame,'MonthlyIncome'))
 
 #Scaling
-scale(read_d,'age')
+scale(data_frame,"SeriousDlqin2yrs")
 
 
 #Bivariate
-bivariate(read_d,'age', 'DebtRatio')
-
+bivariate(data_frame,'age','DebtRatio')
+"""
 
 #histogram and normal probability plot
-norm_plot(read_d,'age')
+norm_plot(data_frame,"SeriousDlqin2yrs")
 """
+
 #filling in empty data
-print (fill_empty(read_d,read_d.mean()))
+print (data_frame["MonthlyIncome"])
+print (fill_empty(data_frame,"MonthlyIncome", data_frame["MonthlyIncome"].mean()))
 
 
+column_variables = ['RevolvingUtilizationOfUnsecuredLines',"SeriousDlqin2yrs",'NumberOfTime30-59DaysPastDueNotWorse',
+       'DebtRatio','MonthlyIncome','NumberOfOpenCreditLinesAndLoans','NumberOfTimes90DaysLate',
+       'NumberRealEstateLoansOrLines','NumberOfTime60-89DaysPastDueNotWorse','NumberOfDependents']
+print (logReg(data_frame, "SeriousDlqin2yrs", column_variables))
 
+"""
 
 
