@@ -5,5 +5,5 @@ Assignments for Machine Learning in Public Policy
 
 ml_pipeline: contains scripts and tests for reusable modular machine learning pipeline
 311_calls: analysis of 311 calls in chicago area
-
+data: raw data files 
 
