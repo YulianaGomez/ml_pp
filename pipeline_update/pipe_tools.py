@@ -216,6 +216,52 @@ def get_metrics(y_pred, val_Y):
     metric_results["THRESH"] = thresh.tolist()
     return (metric_results)
 
+#plotting precisison and recal graphs, input one column for y_pred in class_comp method
+def plot_precision_recall(val_Y,y_pred,model_name,output_type):
+    #pdb.set_trace()
+    prec,rec,thresh = precision_recall_curve(val_Y, y_pred)
+    prec = prec[:-1]
+    recall_curve = rec[:-1]
+    pct_above_per_thresh = []
+    number_scored = len(y_pred)
+    for value in thresh:
+        num_above_thresh = len(y_pred[y_pred>=value])
+        pct_above_thresh = num_above_thresh / float(len(y_pred))
+
+        if pct_above_thresh <= 1:
+            pct_above_per_thresh.append(pct_above_thresh)
+        else:
+            pdb.set_trace()
+
+    
+    pct_above_per_thresh = np.array(pct_above_per_thresh)
+    plt.clf()
+    fig, ax1 = plt.subplots()
+    ax1.plot(pct_above_per_thresh, prec, 'b')
+    print("PLOTTING STUFF")
+    print(pct_above_per_thresh)
+    print(prec[:-1])
+    ax1.set_xlabel('percent of population')
+    ax1.set_ylabel('precision', color='b')
+    ax2 = ax1.twinx()
+    ax2.plot(pct_above_per_thresh, recall_curve, 'r')
+    ax2.set_ylabel('recall', color='r')
+    ax1.set_ylim([0,1])
+    ax1.set_ylim([0,1])
+    ax2.set_xlim([0,1])
+    
+    name = model_name
+    plt.title(name)
+    if (output_type == 'save'):
+        plt.savefig(name)
+    elif (output_type == 'show'):
+        plt.show()
+    else:
+        plt.show()
+
+
+
+
 def temp_val(data_frame,target,features):
     
     models_params = {
@@ -293,6 +339,11 @@ def class_comp(train_set,test_set,target,features,models_params):
            #val_y are true values
            y_pred = model.predict_proba(val_X)
            metrics[m] = get_metrics(y_pred,val_Y)
+           print("this is valy")
+           print (val_Y)
+           print("this is y_pred")
+           print (y_pred)
+           plot_precision_recall(val_Y, y_pred[:,0],model,'show')
            out.write("----------------------------\n")
            out.write("Using %s classifier \n" % models_params)
            out.write(json.dumps(metrics[m]))
