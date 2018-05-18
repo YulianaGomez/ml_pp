@@ -98,8 +98,9 @@ data_frame_1['date_posted'] = pd.to_datetime(data_frame_1['date_posted'])
 features = ['school_latitude', 'school_longitude']
 """my_data = pd.DataFrame(np.random.random((1000,5)),columns=features)
 my_data['fully_funded'] = np.random.random((1000))>.5
-my_data['Time'] = pd.date_range('1/1/2011', periods=1000, freq='M')"""
-data_frame_1['fully_funded'] = np.random.random((30000))>.5
+my_data['Time'] = pd.date_ra'1/1/2011', periods=1000, freq='M')"""
+#data_frame_1['fully_funded'] = np.random.random((30000))>.5
+data_frame_1['fully_funded'] = data_frame_1['fully_funded'] == 't'
 target = ['fully_funded']
 temp_val(data_frame_1,target,features)
 
