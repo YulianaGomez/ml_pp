@@ -36,6 +36,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.cross_validation import train_test_split
 from sklearn import metrics
 from sklearn.cross_validation import cross_val_score
+import json
 
 """
     Homework 2: ML Pipeline
@@ -209,9 +210,11 @@ def get_metrics(y_pred, val_Y):
         metric_results["F1 at" + str([i])] = f1_score(val_Y, y_pred[:,0] > 1 - i)
         
     metric_results["ROC"] = roc_auc_score(val_Y, y_pred[:,0])
-    precision_recall = precision_recall_curve(val_Y, y_pred[:,0])
-
-    return (metric_results,precision_recall)
+    prec,rec,thresh = precision_recall_curve(val_Y, y_pred[:,0])
+    metric_results["PREC"] = prec.tolist()
+    metric_results["REC"] = rec.tolist()
+    metric_results["THRESH"] = thresh.tolist()
+    return (metric_results)
 
 def temp_val(data_frame,target,features):
     
@@ -219,10 +222,10 @@ def temp_val(data_frame,target,features):
         LogisticRegression: {'C':[10**-1,10**-2,10**-3],'penalty':['l1','l2']},
         KNeighborsClassifier:{'n_neighbors':[5,10,25,100], 'p':[1,2,3],'n_jobs':[2]},
         DecisionTreeClassifier:{'max_depth': [5,10,15],'min_samples_leaf':[2,5,10]},
-        SVC:{'kernel':['linear','rbf'],'gamma':[10,1,.1,.01], 'C':[10,1,.1,.01], 'probability':[True]},
-        RandomForestClassifier:{'n_estimators':[100] , 'criterion':['gini','entropy'], 'max_features':[5,'sqrt','log2'] , 'max_depth':[5,10],'n_jobs':[4], 'min_samples_leaf':[10,50,100]},
-        GradientBoostingClassifier:{'learning_rate':[.1,.01],'n_estimators':[100] ,'max_features':[5,'sqrt','log2'] , 'max_depth':[1,2,3]},
-        BaggingClassifier:{'max_samples':[.1,.25,.65], 'n_jobs':[4]}
+        RandomForestClassifier:{'n_estimators':[100] , 'criterion':['gini','entropy'], 'max_features':['sqrt','log2'] , 'max_depth':[5,10],'n_jobs':[4], 'min_samples_leaf':[10,50,100]},
+        GradientBoostingClassifier:{'learning_rate':[.1,.01],'n_estimators':[100] ,'max_features':['sqrt','log2'] , 'max_depth':[1,2,3]},
+        BaggingClassifier:{'max_samples':[.1,.25,.65], 'n_jobs':[4]},
+        #SVC:{'kernel':['linear','rbf'],'gamma':[10,1,.1,.01], 'C':[10,1,.1,.01], 'probability':[True]}
         }
     # start time of our data
     #start_time = '2002-09-13'
@@ -270,6 +273,7 @@ def extract_train_test_sets(train_start_time, train_end_time, test_start_time, t
 
 
 def class_comp(train_set,test_set,target,features,models_params):
+    out = open("out.txt","a")
     X = train_set[features]
     y = train_set[target]
     metrics = {}
@@ -279,14 +283,19 @@ def class_comp(train_set,test_set,target,features,models_params):
     for m, m_param in models_params.items():
        listofparam = get_combos(m_param)
        print("start training for {0}".format(m))
+       out.write("start training for {0}\n".format(m))
        for params in listofparam:
            print (params)
+           out.write(json.dumps(params))
            model = m(**params)
            model.fit(X,y)
            #y_pred vector of prob estimates
            #val_y are true values
            y_pred = model.predict_proba(val_X)
            metrics[m] = get_metrics(y_pred,val_Y)
+           out.write("----------------------------\n")
+           out.write("Using %s classifier \n" % models_params)
+           out.write(json.dumps(metrics[m]))
 
 
 

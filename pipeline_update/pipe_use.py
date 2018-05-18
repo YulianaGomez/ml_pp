@@ -85,24 +85,24 @@ knearest(data_frame,'DebtRatio','SeriousDlqin2yrs')
 #print (len(merged_data))
 
 
-data_frame_1 = load_data("projects.csv",nrows=30000)
+data_frame_1 = load_data("projects.csv")
 data_frame_1['date_posted'] = pd.to_datetime(data_frame_1['date_posted'])
 #print(data_frame_1.columns)
-#data_frame_2 = load_data("outcomes.csv")
+data_frame_2 = load_data("outcomes.csv")
+#data_frame_2['date_posted'] = pd.to_datetime(data_frame_2['date_posted'])
 #print (data_frame)
 #train_val_splits = [
 #        (list(range(100)),list(range(100,200)))]
-"""(list(range(20000)),list(range(20000,30000))),
-        (list(range(30000)),list(range(30000,50000)))]"""
+
 #features =['Poverty','grade_level','students_reached','is_exciting','teacher_referred_count]
 features = ['school_latitude', 'school_longitude']
-"""my_data = pd.DataFrame(np.random.random((1000,5)),columns=features)
-my_data['fully_funded'] = np.random.random((1000))>.5
-my_data['Time'] = pd.date_ra'1/1/2011', periods=1000, freq='M')"""
+
 #data_frame_1['fully_funded'] = np.random.random((30000))>.5
-data_frame_1['fully_funded'] = data_frame_1['fully_funded'] == 't'
+data_frame_2['fully_funded'] = data_frame_2['fully_funded'] == 't'
+merged_data = merging_data(data_frame_1,data_frame_2)
+small_df =merged_data.head(100000)
 target = ['fully_funded']
-temp_val(data_frame_1,target,features)
+temp_val(small_df,target,features)
 
 #class_comp(LogisticRegression, train_val_splits, my_data, target,features)
 
