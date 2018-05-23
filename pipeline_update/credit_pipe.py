@@ -8,6 +8,7 @@ import matplotlib.dates as dates
 from sklearn.metrics import f1_score
 import pandas as pd
 import os
+
 import sys
 import datetime
 import glob
@@ -16,6 +17,7 @@ import graphviz
 import seaborn as sns
 import numpy as np
 from scipy.stats import norm
+from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import precision_recall_curve
@@ -37,6 +39,7 @@ from sklearn.cross_validation import train_test_split
 from sklearn import metrics
 from sklearn.cross_validation import cross_val_score
 import json
+from sklearn.model_selection import KFold
 
 """
     Homework 2: ML Pipeline
@@ -90,7 +93,9 @@ def miss_data(data_frame):
     total = data_frame.isnull().sum().sort_values(ascending=False)
     percent = (data_frame.isnull().sum()/data_frame.isnull().count()).sort_values(ascending=False)
     missing_data = pd.concat([total, percent], axis=1, keys=['Total', 'Percent'])
-    return missing_data.head(20)
+    #return missing_data.head(20)
+    return missing_data
+
 
 #Dealing with missing data
 def clean_miss(data_frame):
@@ -210,21 +215,67 @@ def to_binary(df,array_col):
 #analyzing results from classifiers
 def get_metrics(y_pred, val_Y):
     metric_results ={}
-    
+    #predicting the majority class
+    ones = np.sum(val_Y)['SeriousDlqin2yrs']/float(len(val_Y))
+    zeros = 1-ones
+    try:
+        metric_results['baseline'] = max(ones, zeros)
+    except:
+        pdb.set_trace()
+    if ones > zeros:
+        metric_results['precision_base'] = precision_score(val_Y, np.ones(len(val_Y)))
+        metric_results['recall_base'] = recall_score(val_Y,np.ones[len(val_Y)])
+    else:
+        metric_results['precision_base'] = precision_score(val_Y, np.zeros(len(val_Y)))
+        metric_results['recall_base'] = recall_score(val_Y,np.zeros(len(val_Y)))
+
     #loss = f1_score(y_pred,val_Y)
     perf_metrics = [.01,.02,.05,.10,.20,.30,.50]
     for i in perf_metrics:
         #pdb.set_trace()
-        metric_results["precision at" + str([i])] = precision_score(val_Y, y_pred[:,0] > 1 - i)
-        metric_results["recall at" + str([i])] = recall_score(val_Y, y_pred[:,0] > 1 - i)
-        metric_results["F1 at" + str([i])] = f1_score(val_Y, y_pred[:,0] > 1 - i)
+        print("Recall AT \n")
+        print(recall_at_k(val_Y, y_pred, i))
+        #metric_results["precision at" + str([i])] = precision_score(val_Y, y_pred > 1 - i)
+        metric_results["precision at" + str([i])] = precision_at_k(val_Y, y_pred, i)
+        metric_results["recall at" + str([i])] = recall_score(val_Y, y_pred> 1 - i)
+        metric_results["F1 at" + str([i])] = f1_score(val_Y, y_pred > 1 - i)
         
-    metric_results["ROC"] = roc_auc_score(val_Y, y_pred[:,0])
-    prec,rec,thresh = precision_recall_curve(val_Y, y_pred[:,0])
+    metric_results["ROC"] = roc_auc_score(val_Y, y_pred)
+    prec,rec,thresh = precision_recall_curve(val_Y, y_pred)
     metric_results["PREC"] = prec.tolist()
     metric_results["REC"] = rec.tolist()
     metric_results["THRESH"] = thresh.tolist()
+    #out.write(metric_results)
     return (metric_results)
+
+def recall_at_k(y_true, y_scores, k):
+    #y_scores_sorted, y_true_sorted = zip(*sorted(zip(y_scores, y_true), reverse=True))
+    y_scores_sorted, y_true_sorted = joint_sort_descending(np.array(y_scores), np.array(y_true))
+    preds_at_k = generate_binary_at_k(y_scores_sorted, k)
+    #precision, _, _, _ = metrics.precision_recall_fscore_support(y_true, preds_at_k)
+    #precision = precision[1]  # only interested in precision for label 1
+    recall = recall_score(y_true_sorted, preds_at_k)
+    return recall
+
+def joint_sort_descending(l1, l2):
+    # l1 and l2 have to be numpy arrays
+    idx = np.argsort(l1)[::-1]
+    return l1[idx], l2[idx]
+
+def generate_binary_at_k(y_scores, k):
+    cutoff_index = int(len(y_scores) * (k / 100.0))
+    predictions_binary = [1 if x < cutoff_index else 0 for x in range(len(y_scores))]
+    return predictions_binary
+
+
+def precision_at_k(y_true, y_scores, k):
+    #y_scores_sorted, y_true_sorted = zip(*sorted(zip(y_scores, y_true), reverse=True))
+    y_scores_sorted, y_true_sorted = joint_sort_descending(np.array(y_scores), np.array(y_true))
+    preds_at_k = generate_binary_at_k(y_scores_sorted, k)
+    #precision, _, _, _ = metrics.precision_recall_fscore_support(y_true, preds_at_k)
+    #precision = precision[1]  # only interested in precision for label 1
+    precision = precision_score(y_true_sorted, preds_at_k)
+    return precision
 
 #plotting precisison and recal graphs, input one column for y_pred in class_comp method
 def plot_precision_recall(val_Y,y_pred,model_name,output_type):
@@ -241,7 +292,7 @@ def plot_precision_recall(val_Y,y_pred,model_name,output_type):
         if pct_above_thresh <= 1:
             pct_above_per_thresh.append(pct_above_thresh)
         else:
-            pdb.set_trace()
+            raise Exception
 
     
     pct_above_per_thresh = np.array(pct_above_per_thresh)
@@ -257,7 +308,6 @@ def plot_precision_recall(val_Y,y_pred,model_name,output_type):
     ax2.plot(pct_above_per_thresh, recall_curve, 'r')
     ax2.set_ylabel('recall', color='r')
     ax1.set_ylim([0,1])
-    ax1.set_ylim([0,1])
     ax2.set_xlim([0,1])
     
     name = model_name
@@ -267,18 +317,21 @@ def plot_precision_recall(val_Y,y_pred,model_name,output_type):
         plt.savefig(name)
     elif (output_type == 'show'):
         plt.show()
+        pdb.set_trace()
     else:
+        
         plt.show()
+        pdb.set_trace()
 
 
 
 def temp_val(data_frame,target,features):
     
     models_params = {
+        RandomForestClassifier:{'n_estimators':[100] , 'criterion':['gini','entropy'], 'max_features':['sqrt','log2'] , 'max_depth':[5,10],'n_jobs':[4], 'min_samples_leaf':[10,50,100]},
         LogisticRegression: {'C':[10**-1,10**-2,10**-3],'penalty':['l1','l2']},
         KNeighborsClassifier:{'n_neighbors':[5,10,25,100], 'p':[1,2,3],'n_jobs':[2]},
         DecisionTreeClassifier:{'max_depth': [5,10,15],'min_samples_leaf':[2,5,10]},
-        RandomForestClassifier:{'n_estimators':[100] , 'criterion':['gini','entropy'], 'max_features':['sqrt','log2'] , 'max_depth':[5,10],'n_jobs':[4], 'min_samples_leaf':[10,50,100]},
         GradientBoostingClassifier:{'learning_rate':[.1,.01],'n_estimators':[100] ,'max_features':['sqrt','log2'] , 'max_depth':[1,2,3]},
         BaggingClassifier:{'max_samples':[.1,.25,.65], 'n_jobs':[4]},
         #SVC:{'kernel':['linear','rbf'],'gamma':[10,1,.1,.01], 'C':[10,1,.1,.01], 'probability':[True]}
@@ -322,6 +375,48 @@ def temp_val(data_frame,target,features):
                 # predict on test data
             test_end_time -= relativedelta(months=+update_window)
 
+def kfold_eval(df, target, features):
+    models_params = {
+    RandomForestClassifier:{'n_estimators':[100] , 'criterion':['gini','entropy'], 'max_features':['sqrt','log2'] , 'max_depth':[5,10],'n_jobs':[4], 'min_samples_leaf':[10,50,100]},
+    LogisticRegression: {'C':[10**-1,10**-2,10**-3],'penalty':['l1','l2']},
+    KNeighborsClassifier:{'n_neighbors':[5,10,25,100], 'p':[1,2,3],'n_jobs':[2]},
+    DecisionTreeClassifier:{'max_depth': [5,10,15],'min_samples_leaf':[2,5,10]},
+    GradientBoostingClassifier:{'learning_rate':[.1,.01],'n_estimators':[100] ,'max_features':['sqrt','log2'] , 'max_depth':[1,2,3]},
+    BaggingClassifier:{'max_samples':[.1,.25,.65], 'n_jobs':[4]},
+    #SVC:{'kernel':['linear','rbf'],'gamma':[10,1,.1,.01], 'C':[10,1,.1,.01], 'probability':[True]}
+    }
+    X = df[features]
+    #print(X)
+    y = df[target]
+    print(y)
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+    """
+    kf = KFold(n_splits=2)
+    kf.get_n_splits(X)
+    #print(kf)
+    KFold(n_splits=2,random_state=None,shuffle=False)
+    for train_index, test_index in kf.split(X):
+        print("TRAIN:", train_index, "TEST:", test_index)
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+    """
+    #knn = KNeighborsClassifier(n_neighbors=5, metric='minkowski',p=4)
+    """rf = RandomForestClassifier(n_estimators=100,criterion='gini',max_features='sqrt',max_depth=5)
+    rf.fit(X_train, y_train)
+    y_score = rf.predict_proba(X_test)
+    #y_score = rf.decision_function(X_test)
+    y_pred = rf.predict(X_test)
+    print(roc_auc_score(y_test,y_score[:,0]))
+    metrics_1 ={}"""
+    class_comp(X_train, X_test, y_train, y_test,target,features,models_params)
+    #print (y_pred.shape)
+    #print (y_test.shape)
+    
+    #return
+    #for i in range(len(y_test)): print(y_pred)
+    print(accuracy_score(y_test,y_pred))   #print (set(y_pred))
+    #print (metrics_1)
 #Splitting the data for training and testing sets
 def extract_train_test_sets(train_start_time, train_end_time, test_start_time, test_end_time, df):
     train_set = df[(df['date_posted'] > train_start_time) & (df['date_posted']<train_end_time)]
@@ -329,14 +424,15 @@ def extract_train_test_sets(train_start_time, train_end_time, test_start_time, t
     return train_set, test_set
 
 
-def class_comp(train_set,test_set,target,features,models_params):
+def class_comp(X_train, X_test, y_train,y_test,target,features,models_params):
     out = open("out.txt","a")
-    X = train_set[features]
-    y = train_set[target]
-    metrics = {}
+    """X_train = train_set[features] #X
+    y_train = train_set[target] #y
+    
     #validation
-    val_X = test_set[features]
-    val_Y = test_set[target]
+    X_test = test_set[features] #val_x
+    y_test = test_set[target] #val_y"""
+    metrics = {}
     for m, m_param in models_params.items():
        listofparam = get_combos(m_param)
        print("start training for {0}".format(m))
@@ -345,16 +441,16 @@ def class_comp(train_set,test_set,target,features,models_params):
            print (params)
            out.write(json.dumps(params))
            model = m(**params)
-           model.fit(X,y)
+           model.fit(X_train,y_train)
            #y_pred vector of prob estimates
            #val_y are true values
-           y_pred = model.predict_proba(val_X)
-           metrics[m] = get_metrics(y_pred,val_Y)
+           y_pred = model.predict_proba(X_test)
+           metrics[m] = get_metrics(y_pred[:,1],y_test)
            print("this is valy")
-           print (val_Y)
+           print (y_test)
            print("this is y_pred")
            print (y_pred)
-           plot_precision_recall(val_Y, y_pred[:,0],model,'show')
+           plot_precision_recall(y_test, y_pred[:,1],model,'show')
            out.write("----------------------------\n")
            out.write("Using %s classifier \n" % models_params)
            out.write(json.dumps(metrics[m]))
