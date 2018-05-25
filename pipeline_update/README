@@ -1,5 +1,9 @@
 Dataframe not included in directory. Run using python3. 
 
+mlpp_as3_writeup.pdf - analysis of results
+
+metrics.out  - precision and recall metrics, tried to fix formatting, but still not easily readible
+
 Run pipe_use.py to test different ml classifiers. Show plot is commented out, but will plot recall and precision if uncommented. SVC is commented as it takes much longer to run.
 
 The analysis is done using credit data, but some initial analysis was done using the funding data provided from kaggle. Therefore, there are two pipelines, one for funding data and one for credit data. (pipe_tools.py and credit_pipe.py) 
