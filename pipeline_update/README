@@ -1,3 +1,11 @@
 Dataframe not included in directory. Run using python3. 
 
+Run pipe_use.py to test different ml classifiers. Show plot is commented out, but will plot recall and precision if uncommented. SVC is commented as it takes much longer to run.
 
+The analysis is done using credit data, but some initial analysis was done using the funding data provided from kaggle. Therefore, there are two pipelines, one for funding data and one for credit data. (pipe_tools.py and credit_pipe.py) 
+
+The initial data analysis functions are commented out in pipe_use.py to reduce wait time.
+
+Sample run (credit data not included):
+
+Python3 pipe_use.py
